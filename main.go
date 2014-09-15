@@ -255,7 +255,7 @@ func restartGame() {
 
 func jump() {
 	for _, flappyBird := range flappyBirds {
-		flappyBird.Body.UpdateVelocity(space.Gravity, vect.Float(-.3), vect.Float(-.3))
+		flappyBird.Body.UpdateVelocity(space.Gravity, vect.Float(-.1), vect.Float(-.3))
 	}
 }
 
