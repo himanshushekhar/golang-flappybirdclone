@@ -30,6 +30,9 @@ var (
 	pipe     	[]*chipmunk.Shape
 	flappyBirds []*chipmunk.Shape
 	deg2rad     = math.Pi / 180
+
+	isFlappyAlive  bool
+	isWindowEventHandlerDisabled bool
 )
 
 type collisionHandlers struct {}
@@ -118,6 +121,8 @@ func addFlappy() {
 	body.AddShape(flappyBird)
 	space.AddBody(body)
 	flappyBirds = append(flappyBirds, flappyBird)
+
+	isFlappyAlive = true
 }
 
 // renders the display on each update
@@ -165,9 +170,10 @@ func step(dt float32) {
 		}
 	}
 
-	//
+	// restart the game when flappy is out
 	if len(flappyBirds) == 0 {
-		addFlappy()
+		isFlappyAlive = false
+		restartGame()
 	}
 
 	// clean up any off-screen pipe
@@ -183,6 +189,8 @@ func step(dt float32) {
 }
 
 func main() {
+	rand.Seed( time.Now().UTC().UnixNano())
+
 	if !glfw.Init() {
 		fmt.Fprintf(os.Stderr, "Can't open GLFW")
 		return
@@ -223,8 +231,12 @@ func main() {
 		// add pipe every 1.5 sec
 		ticksToNextPipe--
 		if ticksToNextPipe == 0 {
-			ticksToNextPipe = 90
-			addPipe()
+			if isFlappyAlive {
+				ticksToNextPipe = 90
+				addPipe()
+			} else {
+				ticksToNextPipe = 10
+			}			
 		}
 		// render the display
 		render()
@@ -236,9 +248,30 @@ func main() {
 	}
 }
 
+func restartGame() {
+	cleanPipes()
+	addFlappy()	
+}
+
 func jump() {
 	for _, flappyBird := range flappyBirds {
 		flappyBird.Body.UpdateVelocity(space.Gravity, vect.Float(-.3), vect.Float(-.3))
+	}
+}
+
+func cleanPipes() {
+	// clean up all pipes
+	for i := 0; i < len(pipe); i++ {
+		space.RemoveBody(pipe[i].Body)
+		pipe[i] = nil
+		pipe = append(pipe[:i], pipe[i+1:]...)
+		i-- // consider same index again
+	}
+}
+
+func stopPipes() {
+	for _, pipeBox := range pipe {
+		pipeBox.Body.SetVelocity(0, 0)
 	}
 }
 
@@ -247,7 +280,12 @@ func onKey(window *glfw.Window, k glfw.Key, s int, action glfw.Action, mods glfw
         return
     }
 
-    switch glfw.Key(k){
+    // disable if event handlers are flagged off
+    if !isFlappyAlive && (k != glfw.KeyEscape) {
+    	return
+    }
+
+    switch glfw.Key(k) {
         case glfw.KeyEscape:
             window.SetShouldClose(true)
         case glfw.KeySpace :
@@ -262,7 +300,12 @@ func onMouseBtn(window *glfw.Window, b glfw.MouseButton, action glfw.Action, mod
         return
     }
 
-    switch glfw.MouseButton(b){
+    // disable if event handlers are flagged off
+    if !isFlappyAlive {
+    	return
+    }
+
+    switch glfw.MouseButton(b) {
         case glfw.MouseButtonLeft :
             jump()
         default:
@@ -276,19 +319,18 @@ func onClose(window *glfw.Window) {
 
 
 func (c collisionHandlers) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
-    fmt.Println("collision begin")
     return true
 }
 
 func (c collisionHandlers) CollisionPreSolve(arbiter *chipmunk.Arbiter) bool {
-    fmt.Println("collision presolve")
     return true
 }
 
 func (c collisionHandlers) CollisionPostSolve(arbiter *chipmunk.Arbiter) {
-    fmt.Println("collision postsolve")
+	isFlappyAlive = false
+	stopPipes()
 }
 
 func (c collisionHandlers) CollisionExit(arbiter *chipmunk.Arbiter) {
-    fmt.Println("collision exit")
+	return
 }
