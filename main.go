@@ -32,6 +32,8 @@ var (
 	deg2rad     = math.Pi / 180
 )
 
+type collisionHandlers struct {}
+
 func setWindowHints() {
 	// glfw.WindowHint(glfw.Samples, 4)
 	// // Create a context to specify the version of OpenGl to 3.3
@@ -108,7 +110,10 @@ func addFlappy() {
 
 	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMass))
 	body.SetPosition(vect.Vect{100, vect.Float(winHeight)})
-	//body.SetVelocity(pipeVelX, pipeVelY)
+	
+	// hook collision events
+	handlers := collisionHandlers{}
+	body.CallbackHandler = handlers
 
 	body.AddShape(flappyBird)
 	space.AddBody(body)
@@ -267,4 +272,23 @@ func onMouseBtn(window *glfw.Window, b glfw.MouseButton, action glfw.Action, mod
 
 func onClose(window *glfw.Window) {
 	window.SetShouldClose(true)
+}
+
+
+func (c collisionHandlers) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
+    fmt.Println("collision begin")
+    return true
+}
+
+func (c collisionHandlers) CollisionPreSolve(arbiter *chipmunk.Arbiter) bool {
+    fmt.Println("collision presolve")
+    return true
+}
+
+func (c collisionHandlers) CollisionPostSolve(arbiter *chipmunk.Arbiter) {
+    fmt.Println("collision postsolve")
+}
+
+func (c collisionHandlers) CollisionExit(arbiter *chipmunk.Arbiter) {
+    fmt.Println("collision exit")
 }
