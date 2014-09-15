@@ -253,7 +253,16 @@ func onKey(window *glfw.Window, k glfw.Key, s int, action glfw.Action, mods glfw
 }
 
 func onMouseBtn(window *glfw.Window, b glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	return
+	if action != glfw.Press {
+        return
+    }
+
+    switch glfw.MouseButton(b){
+        case glfw.MouseButtonLeft :
+            jump()
+        default:
+            return
+    }
 }
 
 func onClose(window *glfw.Window) {
