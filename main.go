@@ -17,24 +17,25 @@ import (
 )
 
 var (
-	winWidth    = 600
-	winHeight   = 620
+	winWidth    	= 600
+	winHeight   	= 620
 
-	flappySide  = 60
-	pipeSide    = 60
+	flappySide  	= 60
+	pipeSide    	= 60
 
-	flappyMass 	= 1
-	score 		= 0
+	flappyMass 		= 1
+	score 			= 0
+	noOfPipesAdded 	= 0
 
-	pipeVelX 	= float32(-200)
-	pipeVelY	= float32(0)
+	pipeVelX 		= float32(-200)
+	pipeVelY		= float32(0)
 
-	space       *chipmunk.Space
-	pipe     	[]*chipmunk.Shape
-	flappyBirds []*chipmunk.Shape
+	space       	*chipmunk.Space
+	pipe     		[]*chipmunk.Shape
+	flappyBirds 	[]*chipmunk.Shape
 
 	birdCollided 	bool
-	justStarted	bool
+	justStarted		bool
 )
 
 type collisionHandlers struct {}
@@ -119,6 +120,7 @@ func addFlappy() {
 
 	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMass))
 	body.SetPosition(vect.Vect{100, vect.Float(winHeight)})
+	body.SetAngularVelocity(0.2)
 	
 	// hook collision events
 	handlers := collisionHandlers{}
@@ -198,7 +200,7 @@ func bitmap_output(x, y float32, str string, font glut.BitmapFont) {
 
 // draw score of the game
 func drawScore(score string) {
-    bitmap_output(30, 550, score, glut.BITMAP_TIMES_ROMAN_24)
+    bitmap_output(250, 600, score, glut.BITMAP_TIMES_ROMAN_24)
 }
 
 func main() {
@@ -239,7 +241,7 @@ func main() {
 	window.SetMouseButtonCallback(onMouseBtn)
 	window.SetKeyCallback(onKey)
 	window.SetCloseCallback(onClose)
-	
+
 	ticksToNextPipe := 10
 	ticker := time.NewTicker(time.Second / 60)
 	// keep updating till we die ..
@@ -250,8 +252,11 @@ func main() {
 			if !birdCollided {
 				ticksToNextPipe = 90
 				addPipe()
+				noOfPipesAdded++
 				// increment score
-				score++
+				if noOfPipesAdded > 2 {
+					score++
+				}
 			} else {
 				ticksToNextPipe = 10
 			}			
@@ -267,8 +272,10 @@ func main() {
 }
 
 func restartGame() {
+	noOfPipesAdded = 0
 	score = 0
 	birdCollided = false
+
 	cleanFlappy()
 	cleanPipes()
 	addFlappy()	
