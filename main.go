@@ -20,7 +20,7 @@ var (
 	winWidth    	= 600
 	winHeight   	= 620
 
-	flappySide  	= 60
+	innerPipeSide  	= 58
 	pipeSide    	= 60
 
 	flappyMass 		= 1
@@ -75,16 +75,26 @@ func initPhysics() {
 	space.Gravity = vect.Vect{0, -900}
 }
 
-func drawSquare() {
-	gl.Begin(gl.POLYGON)
-	
+func drawSquare(colorRed, colorGreen, colorBlue, alpha float32) {
+	// first draw the first dark layer
+	gl.Color4f(0, 0, 0, 1)
+	gl.Begin(gl.POLYGON)	
 	gl.Vertex2d(float64(pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(-pipeSide/2))
-	gl.Vertex2d(float64(pipeSide/2), float64(-pipeSide/2))
-	
-	gl.Vertex3f(0, 0, 0)
+	gl.Vertex2d(float64(pipeSide/2), float64(-pipeSide/2))	
 	gl.End()
+
+	// then draw the actual color layer
+	gl.Color4f(colorRed, colorGreen, colorBlue, alpha)
+	gl.Begin(gl.POLYGON)	
+	gl.Vertex2d(float64(innerPipeSide/2), float64(innerPipeSide/2))
+	gl.Vertex2d(float64(-innerPipeSide/2), float64(innerPipeSide/2))
+	gl.Vertex2d(float64(-innerPipeSide/2), float64(-innerPipeSide/2))
+	gl.Vertex2d(float64(innerPipeSide/2), float64(-innerPipeSide/2))	
+	gl.End()
+
+	gl.Vertex3f(0, 0, 0)
 }
 
 // add a pipe box to the space
@@ -115,7 +125,7 @@ func addPipe() {
 }
 
 func addFlappy() {
-	flappyBird := chipmunk.NewBox(vect.Vector_Zero, vect.Float(flappySide), vect.Float(flappySide))
+	flappyBird := chipmunk.NewBox(vect.Vector_Zero, vect.Float(pipeSide), vect.Float(pipeSide))
 	flappyBird.SetElasticity(0.95)
 
 	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMass))
@@ -140,23 +150,21 @@ func render() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.LoadIdentity()
 
-	gl.Color4f(.19, .8, .19, 1)	// limegreen
 	// draw pipes
 	for _, pipeBox := range pipe {
 		gl.PushMatrix()
 		pos := pipeBox.Body.Position()
 		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
-		drawSquare()
+		drawSquare(.19, .8, .19, 1)	// limegreen
 		gl.PopMatrix()
 	}
 
-	gl.Color4f(1, .84, 0, 1)	// gold
 	// draw flappy
 	for _, flappyBird := range flappyBirds {
 		gl.PushMatrix()
 		pos := flappyBird.Body.Position()
 		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
-		drawSquare()
+		drawSquare(1, .84, 0, 1)	// gold
 		gl.PopMatrix()
 	}
 
@@ -173,7 +181,7 @@ func step(dt float32) {
 	// clean up flappy 
 	for i := 0; i < len(flappyBirds); i++ {
 		p := flappyBirds[i].Body.Position()
-		if p.Y < vect.Float(-flappySide / 2) || p.Y > vect.Float( winHeight + flappySide / 2) {
+		if p.Y < vect.Float(-pipeSide / 2) || p.Y > vect.Float( winHeight + pipeSide / 2) {
 			restartGame()
 		}
 	}
