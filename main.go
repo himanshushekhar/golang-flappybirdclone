@@ -23,12 +23,16 @@ var (
 	innerPipeSide  	= 58
 	pipeSide    	= 60
 
+	pipeVelX 		= float32(-200)
+	pipeVelY		= float32(0)
+
 	flappyMass 		= 1
+	flappyMoment	= 1
+
 	score 			= 0
 	noOfPipesAdded 	= 0
 
-	pipeVelX 		= float32(-200)
-	pipeVelY		= float32(0)
+	deg2rad     	= math.Pi / 180
 
 	space       	*chipmunk.Space
 	pipe     		[]*chipmunk.Shape
@@ -61,7 +65,6 @@ func initOpenGl(window *glfw.Window, w, h int) {
 	gl.Ortho(0, float64(w), 0, float64(h), -1, 1)
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
-	//gl.ClearColor(.52, .8, .98, 1)	// lightskyblue
 	gl.ClearColor(.25, .88, .83, 1)	// turquoise
 }
 
@@ -128,9 +131,9 @@ func addFlappy() {
 	flappyBird := chipmunk.NewBox(vect.Vector_Zero, vect.Float(pipeSide), vect.Float(pipeSide))
 	flappyBird.SetElasticity(0.95)
 
-	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMass))
+	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMoment))
 	body.SetPosition(vect.Vect{100, vect.Float(winHeight)})
-	body.SetAngularVelocity(0.2)
+	body.SetAngularVelocity(float32(10 * deg2rad))
 	
 	// hook collision events
 	handlers := collisionHandlers{}
