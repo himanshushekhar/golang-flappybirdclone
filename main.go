@@ -61,7 +61,8 @@ func initOpenGl(window *glfw.Window, w, h int) {
 	gl.Ortho(0, float64(w), 0, float64(h), -1, 1)
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
-	gl.ClearColor(1, 1, 1, 1)
+	//gl.ClearColor(.52, .8, .98, 1)	// lightskyblue
+	gl.ClearColor(.25, .88, .83, 1)	// turquoise
 }
 
 func initGlut() {
@@ -75,13 +76,12 @@ func initPhysics() {
 }
 
 func drawSquare() {
-	gl.Begin(gl.LINE_LOOP)
+	gl.Begin(gl.POLYGON)
 	
 	gl.Vertex2d(float64(pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(-pipeSide/2))
 	gl.Vertex2d(float64(pipeSide/2), float64(-pipeSide/2))
-	gl.Vertex2d(float64(pipeSide/2), float64(pipeSide/2))
 	
 	gl.Vertex3f(0, 0, 0)
 	gl.End()
@@ -140,12 +140,17 @@ func render() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.LoadIdentity()
 
-	gl.Color4f(1, 0, 1, 1)
-	scoreStr := "[ Score: " + strconv.Itoa(score) + " ]"
-	// draw score
-	drawScore(scoreStr)
+	gl.Color4f(.19, .8, .19, 1)	// limegreen
+	// draw pipes
+	for _, pipeBox := range pipe {
+		gl.PushMatrix()
+		pos := pipeBox.Body.Position()
+		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
+		drawSquare()
+		gl.PopMatrix()
+	}
 
-	gl.Color4f(.3, .3, 0, 1)
+	gl.Color4f(1, .84, 0, 1)	// gold
 	// draw flappy
 	for _, flappyBird := range flappyBirds {
 		gl.PushMatrix()
@@ -155,15 +160,10 @@ func render() {
 		gl.PopMatrix()
 	}
 
-	gl.Color4f(.3, .3, 1, 1)
-	// draw pipes
-	for _, pipeBox := range pipe {
-		gl.PushMatrix()
-		pos := pipeBox.Body.Position()
-		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
-		drawSquare()
-		gl.PopMatrix()
-	}
+	gl.Color4f(1, 0, 1, 1)
+	scoreStr := "[ Score: " + strconv.Itoa(score) + " ]"
+	// draw score
+	drawScore(scoreStr)
 }
 
 // step advances the physics engine and cleans up flappy or any pipes that are off-screen
