@@ -7,11 +7,13 @@ import (
 	"math"
 	"math/rand"
 	"time"
+	"strconv"
 
 	"github.com/go-gl/gl"
 	glfw "github.com/go-gl/glfw3"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
+	"github.com/rhencke/glut"
 )
 
 var (
@@ -22,6 +24,7 @@ var (
 	pipeSide    = 60
 
 	flappyMass 	= 1
+	score 		= 0
 
 	pipeVelX 	= float32(-200)
 	pipeVelY	= float32(0)
@@ -29,10 +32,10 @@ var (
 	space       *chipmunk.Space
 	pipe     	[]*chipmunk.Shape
 	flappyBirds []*chipmunk.Shape
-	deg2rad     = math.Pi / 180
 
 	isFlappyAlive  bool
-	isWindowEventHandlerDisabled bool
+	birdCollided 	bool
+	justStarted	bool
 )
 
 type collisionHandlers struct {}
@@ -59,6 +62,10 @@ func initOpenGl(window *glfw.Window, w, h int) {
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
 	gl.ClearColor(1, 1, 1, 1)
+}
+
+func initGlut() {
+	glut.InitDisplayMode(glut.SINGLE | glut.RGB)
 }
 
 // initPhysics sets up the chipmunk space and other physics properties
@@ -134,6 +141,11 @@ func render() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.LoadIdentity()
 
+	// draw score
+	gl.Color4f(1, 0, 1, 1)
+	scoreStr := "[ Score: " + strconv.Itoa(score) + " ]"
+	drawScore(scoreStr)
+
 	gl.Color4f(.3, .3, 0, .8)
 	// draw flappy
 	for _, flappyBird := range flappyBirds {
@@ -162,18 +174,9 @@ func step(dt float32) {
 	// clean up flappy 
 	for i := 0; i < len(flappyBirds); i++ {
 		p := flappyBirds[i].Body.Position()
-		if p.Y < vect.Float(-flappySide / 2) {
-			space.RemoveBody(flappyBirds[i].Body)
-			flappyBirds[i] = nil
-			flappyBirds = append(flappyBirds[:i], flappyBirds[i+1:]...)
-			i-- // consider same index again
+		if p.Y < vect.Float(-flappySide / 2) || p.Y > vect.Float( winHeight + flappySide / 2) {
+			restartGame()
 		}
-	}
-
-	// restart the game when flappy is out
-	if len(flappyBirds) == 0 {
-		isFlappyAlive = false
-		restartGame()
 	}
 
 	// clean up any off-screen pipe
@@ -188,8 +191,19 @@ func step(dt float32) {
 	}
 }
 
+func bitmap_output(x, y float32, str string, font glut.BitmapFont) {
+	gl.RasterPos2f(x, y)
+	for _, ch := range str {
+		font.Character(ch)
+	}
+}
+
+func drawScore(score string) {
+    bitmap_output(30, 550, score, glut.BITMAP_TIMES_ROMAN_24)
+}
+
 func main() {
-	rand.Seed( time.Now().UTC().UnixNano())
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	if !glfw.Init() {
 		fmt.Fprintf(os.Stderr, "Can't open GLFW")
@@ -219,6 +233,9 @@ func main() {
 	// set up opengl context
 	initOpenGl(window, winWidth, winHeight)
 
+	// init glut
+	initGlut()
+
 	// Hook mouse and key events
 	window.SetMouseButtonCallback(onMouseBtn)
 	window.SetKeyCallback(onKey)
@@ -228,13 +245,19 @@ func main() {
 	ticker := time.NewTicker(time.Second / 60)
 	// keep updating till we die ..
 	for !window.ShouldClose() {
+		//fmt.Println("isFlappyAlive: ", isFlappyBirdAlive())
 		// add pipe every 1.5 sec
 		ticksToNextPipe--
 		if ticksToNextPipe == 0 {
-			if isFlappyAlive {
+			fmt.Println("game restarted? ", birdCollided)
+			if !birdCollided {
+				fmt.Println("bird is alive. adding pipe")
 				ticksToNextPipe = 90
 				addPipe()
+				// increment score
+				score++
 			} else {
+				fmt.Println("waiting for bird to take birth")
 				ticksToNextPipe = 10
 			}			
 		}
@@ -249,13 +272,28 @@ func main() {
 }
 
 func restartGame() {
+	score = 0
+	birdCollided = false
+	cleanFlappy()
 	cleanPipes()
 	addFlappy()	
+	fmt.Println("game restarted ", birdCollided)
+	justStarted = true
 }
 
 func jump() {
 	for _, flappyBird := range flappyBirds {
 		flappyBird.Body.UpdateVelocity(space.Gravity, vect.Float(-.1), vect.Float(-.3))
+	}
+}
+
+func cleanFlappy() {
+	// clean up all pipes
+	for i := 0; i < len(flappyBirds); i++ {
+		space.RemoveBody(flappyBirds[i].Body)
+		flappyBirds[i] = nil
+		flappyBirds = append(flappyBirds[:i], flappyBirds[i+1:]...)
+		i-- // consider same index again
 	}
 }
 
@@ -275,13 +313,32 @@ func stopPipes() {
 	}
 }
 
+func sensorizeFlappy() {
+	for _, flappyBird := range flappyBirds {
+		flappyBird.IsSensor = true
+	}
+}
+
+func isFlappyBirdAlive() bool {
+	noOfBirds := len(flappyBirds)
+
+	switch noOfBirds {
+		case 0:
+			return false
+		case 1:
+			return true
+		default:
+			panic("more than one bird!")
+	}
+}
+
 func onKey(window *glfw.Window, k glfw.Key, s int, action glfw.Action, mods glfw.ModifierKey) {
     if action != glfw.Press {
         return
     }
 
     // disable if event handlers are flagged off
-    if !isFlappyAlive && (k != glfw.KeyEscape) {
+    if birdCollided && (k != glfw.KeyEscape) {
     	return
     }
 
@@ -319,6 +376,16 @@ func onClose(window *glfw.Window) {
 
 
 func (c collisionHandlers) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
+	fmt.Println("bird collided")
+	if justStarted {
+		justStarted = false
+	} else {
+		birdCollided = true
+		isFlappyAlive = false
+		sensorizeFlappy()
+		stopPipes()
+	}
+	
     return true
 }
 
@@ -327,8 +394,7 @@ func (c collisionHandlers) CollisionPreSolve(arbiter *chipmunk.Arbiter) bool {
 }
 
 func (c collisionHandlers) CollisionPostSolve(arbiter *chipmunk.Arbiter) {
-	isFlappyAlive = false
-	stopPipes()
+	return
 }
 
 func (c collisionHandlers) CollisionExit(arbiter *chipmunk.Arbiter) {
