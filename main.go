@@ -300,6 +300,8 @@ func restartGame() {
 }
 
 func jump() {
+	// add a computer beep on jump.
+	fmt.Print("\x07")
 	for _, flappyBird := range flappyBirds {
 		flappyBird.Body.UpdateVelocity(space.Gravity, vect.Float(-.1), vect.Float(-.3))
 	}
