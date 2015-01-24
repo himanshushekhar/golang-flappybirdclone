@@ -44,6 +44,10 @@ var (
 
 type collisionHandlers struct {}
 
+func errorCallback(err glfw.ErrorCode, desc string) {
+    fmt.Printf("%v: %v\n", err, desc)
+}
+
 func setWindowHints() {
 	// glfw.WindowHint(glfw.Samples, 4)
 	// // Create a context to specify the version of OpenGl to 3.3
@@ -186,7 +190,7 @@ func step(dt float32) {
 		p := flappyBirds[i].Body.Position()
 		if p.Y < vect.Float(-pipeSide / 2) || p.Y > vect.Float( winHeight + pipeSide / 2) {
 			restartGame()
-		}
+		} 
 	}
 
 	// clean up any off-screen pipe
@@ -197,7 +201,7 @@ func step(dt float32) {
 			pipe[i] = nil
 			pipe = append(pipe[:i], pipe[i+1:]...)
 			i-- // consider same index again
-		}
+		} 
 	}
 }
 
@@ -216,6 +220,7 @@ func drawScore(score string) {
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
+	glfw.SetErrorCallback(errorCallback)
 
 	if !glfw.Init() {
 		fmt.Fprintf(os.Stderr, "Can't open GLFW")
