@@ -2,50 +2,50 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"runtime"
 	"math"
 	"math/rand"
-	"time"
+	"os"
+	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	glfw "github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/himanshushekhar/glut"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
-	"github.com/rhencke/glut"
 )
 
 var (
-	winWidth    	= 600
-	winHeight   	= 620
+	winWidth  = 600
+	winHeight = 620
 
-	innerPipeSide  	= 58
-	pipeSide    	= 60
+	innerPipeSide = 58
+	pipeSide      = 60
 
-	pipeVelX 		= float32(-200)
-	pipeVelY		= float32(0)
+	pipeVelX = float32(-200)
+	pipeVelY = float32(0)
 
-	flappyMass 		= 1
-	flappyMoment	= 1
+	flappyMass   = 1
+	flappyMoment = 1
 
-	score 			= 0
-	noOfPipesAdded 	= 0
+	score          = 0
+	noOfPipesAdded = 0
 
-	deg2rad     	= math.Pi / 180
+	deg2rad = math.Pi / 180
 
-	space       	*chipmunk.Space
-	pipe     		[]*chipmunk.Shape
-	flappyBirds 	[]*chipmunk.Shape
+	space       *chipmunk.Space
+	pipe        []*chipmunk.Shape
+	flappyBirds []*chipmunk.Shape
 
-	birdCollided 	bool
-	justStarted		bool
+	birdCollided bool
+	justStarted  bool
 )
 
-type collisionHandlers struct {}
+type collisionHandlers struct{}
 
 func errorCallback(err glfw.ErrorCode, desc string) {
-    fmt.Printf("%v: %v\n", err, desc)
+	fmt.Printf("%v: %v\n", err, desc)
 }
 
 func setWindowHints() {
@@ -57,7 +57,7 @@ func setWindowHints() {
 	glfw.WindowHint(glfw.Resizable, 0)
 	// Following two are needed for mac since it by default uses OpenGl 2.2
 	// glfw.WindowHint(glfw.OpenglProfile, glfw.OpenglCoreProfile) // remove any deprecated code from older version
-	// glfw.WindowHint(glfw.OpenglForwardCompatible, glfw.True) 
+	// glfw.WindowHint(glfw.OpenglForwardCompatible, glfw.True)
 }
 
 func initOpenGl(window *glfw.Window, w, h int) {
@@ -69,7 +69,7 @@ func initOpenGl(window *glfw.Window, w, h int) {
 	gl.Ortho(0, float64(w), 0, float64(h), -1, 1)
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
-	gl.ClearColor(.25, .88, .83, 1)	// turquoise
+	gl.ClearColor(.25, .88, .83, 1) // turquoise
 }
 
 func initGlut() {
@@ -85,20 +85,20 @@ func initPhysics() {
 func drawSquare(colorRed, colorGreen, colorBlue, alpha float32) {
 	// first draw the first dark layer
 	gl.Color4f(0, 0, 0, 1)
-	gl.Begin(gl.POLYGON)	
+	gl.Begin(gl.POLYGON)
 	gl.Vertex2d(float64(pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(pipeSide/2))
 	gl.Vertex2d(float64(-pipeSide/2), float64(-pipeSide/2))
-	gl.Vertex2d(float64(pipeSide/2), float64(-pipeSide/2))	
+	gl.Vertex2d(float64(pipeSide/2), float64(-pipeSide/2))
 	gl.End()
 
 	// then draw the actual color layer
 	gl.Color4f(colorRed, colorGreen, colorBlue, alpha)
-	gl.Begin(gl.POLYGON)	
+	gl.Begin(gl.POLYGON)
 	gl.Vertex2d(float64(innerPipeSide/2), float64(innerPipeSide/2))
 	gl.Vertex2d(float64(-innerPipeSide/2), float64(innerPipeSide/2))
 	gl.Vertex2d(float64(-innerPipeSide/2), float64(-innerPipeSide/2))
-	gl.Vertex2d(float64(innerPipeSide/2), float64(-innerPipeSide/2))	
+	gl.Vertex2d(float64(innerPipeSide/2), float64(-innerPipeSide/2))
 	gl.End()
 
 	gl.Vertex3f(0, 0, 0)
@@ -122,12 +122,12 @@ func addOnePipeBox(pos vect.Vect) {
 // add a row of 7 pipe boxes to the space
 func addPipe() {
 	// pick a random position for hole in the pipe
-	hole := int(math.Floor(rand.Float64() * 6))+ 1
+	hole := int(math.Floor(rand.Float64()*6)) + 1
 	// add pipe boxes
 	for i := 0; i < 9; i++ {
-		if (i != hole && i != hole + 1) {
-			addOnePipeBox(vect.Vect{vect.Float(winWidth), vect.Float(i * 60 + 30 + i * 10)})
-		}		
+		if i != hole && i != hole+1 {
+			addOnePipeBox(vect.Vect{vect.Float(winWidth), vect.Float(i*60 + 30 + i*10)})
+		}
 	}
 }
 
@@ -138,7 +138,7 @@ func addFlappy() {
 	body := chipmunk.NewBody(vect.Float(flappyMass), vect.Float(flappyMoment))
 	body.SetPosition(vect.Vect{100, vect.Float(winHeight)})
 	body.SetAngularVelocity(float32(10 * deg2rad))
-	
+
 	// hook collision events
 	handlers := collisionHandlers{}
 	body.CallbackHandler = handlers
@@ -162,7 +162,7 @@ func render() {
 		gl.PushMatrix()
 		pos := pipeBox.Body.Position()
 		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
-		drawSquare(.19, .8, .19, 1)	// limegreen
+		drawSquare(.19, .8, .19, 1) // limegreen
 		gl.PopMatrix()
 	}
 
@@ -171,7 +171,7 @@ func render() {
 		gl.PushMatrix()
 		pos := flappyBird.Body.Position()
 		gl.Translatef(float32(pos.X), float32(pos.Y), 0.0)
-		drawSquare(1, .84, 0, 1)	// gold
+		drawSquare(1, .84, 0, 1) // gold
 		gl.PopMatrix()
 	}
 
@@ -185,23 +185,23 @@ func render() {
 func step(dt float32) {
 	space.Step(vect.Float(dt))
 
-	// clean up flappy 
+	// clean up flappy
 	for i := 0; i < len(flappyBirds); i++ {
 		p := flappyBirds[i].Body.Position()
-		if p.Y < vect.Float(-pipeSide / 2) || p.Y > vect.Float( winHeight + pipeSide / 2) {
+		if p.Y < vect.Float(-pipeSide/2) || p.Y > vect.Float(winHeight+pipeSide/2) {
 			restartGame()
-		} 
+		}
 	}
 
 	// clean up any off-screen pipe
 	for i := 0; i < len(pipe); i++ {
 		p := pipe[i].Body.Position()
-		if p.X < vect.Float(-pipeSide / 2) {
+		if p.X < vect.Float(-pipeSide/2) {
 			space.RemoveBody(pipe[i].Body)
 			pipe[i] = nil
 			pipe = append(pipe[:i], pipe[i+1:]...)
 			i-- // consider same index again
-		} 
+		}
 	}
 }
 
@@ -215,7 +215,7 @@ func bitmap_output(x, y float32, str string, font glut.BitmapFont) {
 
 // draw score of the game
 func drawScore(score string) {
-    bitmap_output(250, 600, score, glut.BITMAP_TIMES_ROMAN_24)
+	bitmap_output(250, 600, score, glut.BITMAP_TIMES_ROMAN_24)
 }
 
 func main() {
@@ -226,7 +226,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Can't open GLFW")
 		return
 	}
-	defer glfw.Terminate()	
+	defer glfw.Terminate()
 
 	setWindowHints()
 
@@ -275,7 +275,7 @@ func main() {
 				}
 			} else {
 				ticksToNextPipe = 10
-			}			
+			}
 		}
 		// render the display
 		render()
@@ -294,12 +294,12 @@ func restartGame() {
 
 	cleanFlappy()
 	cleanPipes()
-	addFlappy()	
+	addFlappy()
 
 	/** TODO
-		Just after a new bird takes birth, a collision callback handler
-		receives a collision event even when pipes are no where near
-		the bird. Set a flag to ignore that event.
+	Just after a new bird takes birth, a collision callback handler
+	receives a collision event even when pipes are no where near
+	the bird. Set a flag to ignore that event.
 	*/
 	justStarted = true
 }
@@ -345,47 +345,46 @@ func sensorizeFlappy() {
 }
 
 func onKey(window *glfw.Window, k glfw.Key, s int, action glfw.Action, mods glfw.ModifierKey) {
-    if action != glfw.Press {
-        return
-    }
+	if action != glfw.Press {
+		return
+	}
 
-    // disable if event handlers are flagged off
-    if birdCollided && (k != glfw.KeyEscape) {
-    	return
-    }
+	// disable if event handlers are flagged off
+	if birdCollided && (k != glfw.KeyEscape) {
+		return
+	}
 
-    switch glfw.Key(k) {
-        case glfw.KeyEscape:
-            window.SetShouldClose(true)
-        case glfw.KeySpace :
-            jump()
-        default:
-            return
-    }
+	switch glfw.Key(k) {
+	case glfw.KeyEscape:
+		window.SetShouldClose(true)
+	case glfw.KeySpace:
+		jump()
+	default:
+		return
+	}
 }
 
 func onMouseBtn(window *glfw.Window, b glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 	if action != glfw.Press {
-        return
-    }
+		return
+	}
 
-    // disable if event handlers are flagged off
-    if birdCollided {
-    	return
-    }
+	// disable if event handlers are flagged off
+	if birdCollided {
+		return
+	}
 
-    switch glfw.MouseButton(b) {
-        case glfw.MouseButtonLeft :
-            jump()
-        default:
-            return
-    }
+	switch glfw.MouseButton(b) {
+	case glfw.MouseButtonLeft:
+		jump()
+	default:
+		return
+	}
 }
 
 func onClose(window *glfw.Window) {
 	window.SetShouldClose(true)
 }
-
 
 func (c collisionHandlers) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
 	// TODO	investigate the false collision event
@@ -396,12 +395,12 @@ func (c collisionHandlers) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
 		sensorizeFlappy()
 		stopPipes()
 	}
-	
-    return true
+
+	return true
 }
 
 func (c collisionHandlers) CollisionPreSolve(arbiter *chipmunk.Arbiter) bool {
-    return true
+	return true
 }
 
 func (c collisionHandlers) CollisionPostSolve(arbiter *chipmunk.Arbiter) {
