@@ -9,8 +9,8 @@ import (
 	"time"
 	"strconv"
 
-	"github.com/go-gl/gl"
-	glfw "github.com/go-gl/glfw3"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	glfw "github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
 	"github.com/rhencke/glut"
